@@ -1,0 +1,16 @@
+# Maidel 2.2 Backend Requirements
+
+# Google ADK - Agent Development Kit
+google-adk>=1.14.1
+
+# MCP (Model Context Protocol) - Already included with google-adk
+# mcp>=1.8.0
+
+# Standard library dependencies (included with Python)
+# asyncio - Async programming
+# json - JSON handling
+# sys - System utilities
+
+# Optional development dependencies
+# pytest>=7.0.0           # Testing framework
+# pytest-asyncio>=0.21.0  # Async testing support

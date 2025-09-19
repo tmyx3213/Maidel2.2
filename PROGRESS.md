@@ -21,16 +21,39 @@ ADK マルチエージェント学習用AIデスクトップアプリケーシ�
   - 説明: ADK マルチエージェント学習用AIデスクトップアプリケーション
 - [x] 進捗記録ファイル作成
 
-#### ✅ Phase 1: MCPツール基盤 (開始)
+#### ✅ Phase 1: MCPツール基盤 (完了)
 - [x] Calculator MCP Tool 実装完了
   - SafeCalculator: 安全な数式評価エンジン
   - CalculatorMCPServer: MCPプロトコル準拠サーバー
   - stdio通信でADKとの連携準備完了
   - テスト実行成功（基本計算動作確認）
 
+#### ✅ Phase 2: ADKエージェント実装 (完了)
+- [x] Google ADK v1.14.1 インストール完了
+- [x] ConversationAgent 実装完了
+  - 意図理解（雑談 vs タスク判定）
+  - LlmAgent + gemini-2.0-flash-exp
+  - output_key: "task_type"
+- [x] PlannerAgent 実装完了
+  - 実行計画策定（JSON形式）
+  - 3ステップ構成（解析→計算→整形）
+  - output_key: "execution_plan"
+- [x] ExecutorAgent 実装完了
+  - MCPクライアント統合
+  - ステップ実行管理
+  - output_key: "final_result"
+- [x] SequentialAgent 統合完了
+  - 3エージェント階層構成
+  - main.py統合システム実装
+
+#### ⚠️ 現在の課題
+- ADK v1.14.1のRunner/Session APIインターフェース調整が必要
+- セッション管理の詳細実装が課題
+- エージェント間の状態共有メカニズム要確認
+
 #### 🔄 次のステップ
-- [ ] Memory MCP Tool 実装（オプション）
-- [ ] Phase 2: ADKエージェント実装開始
+- [ ] ADK APIインターフェース調整
+- [ ] Phase 3: Electron+React統合開始
 
 ## フェーズ別計画
 
@@ -39,11 +62,11 @@ ADK マルチエージェント学習用AIデスクトップアプリケーシ�
 - [ ] Memory MCP Tool 実装 (オプション)
 - [x] MCP通信テスト
 
-### Phase 2: ADKエージェント実装 (予定: 3-4日)
-- [ ] ConversationAgent 実装
-- [ ] PlannerAgent 実装
-- [ ] ExecutorAgent 実装
-- [ ] SequentialAgent 統合
+### Phase 2: ADKエージェント実装 (予定: 3-4日) ✅
+- [x] ConversationAgent 実装
+- [x] PlannerAgent 実装
+- [x] ExecutorAgent 実装
+- [x] SequentialAgent 統合
 
 ### Phase 3: Electron+React統合 (予定: 2-3日)
 - [ ] Electron基本構成
@@ -112,6 +135,31 @@ mcp_tools/calculator/
 - 基本計算(2+3=5): OK
 - プロトコル準拠: OK
 
+### Phase 2: ADKエージェント実装
+```
+backend/
+├── agents/
+│   ├── __init__.py          # エージェント統合
+│   ├── conversation.py      # ConversationAgent（意図理解）
+│   ├── planner.py          # PlannerAgent（計画策定）
+│   └── executor.py         # ExecutorAgent（実行制御）
+├── main.py                 # SequentialAgent統合システム
+├── requirements.txt        # ADK依存関係
+├── test_simple.py         # 統合テスト
+└── direct_test.py         # 個別エージェントテスト
+```
+
+**実装のポイント:**
+- Google ADK v1.14.1 + SequentialAgent
+- 3層エージェント構成（会話→計画→実行）
+- MCPクライアント統合（Calculator連携）
+- 状態管理（output_key による状態共有）
+
+**現在の状況:**
+- エージェント実装: 完了
+- ADK統合: 基本実装完了
+- API調整: 要継続作業
+
 ---
 **最終更新**: 2025年9月19日
-**次回作業**: Memory MCP Tool実装またはPhase 2開始
+**次回作業**: ADK API調整またはPhase 3開始

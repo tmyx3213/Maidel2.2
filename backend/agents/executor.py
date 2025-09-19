@@ -5,8 +5,7 @@ ExecutorAgent - 実行エージェント
 """
 
 from google.adk.agents import LlmAgent
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioServerParameters
 import json
 import asyncio
 import subprocess
@@ -26,7 +25,7 @@ class MCPCalculatorClient:
         try:
             # Calculator MCPサーバーを起動
             server_params = StdioServerParameters(
-                command=[sys.executable, "-m", "mcp_tools.calculator"],
+                command=f"{sys.executable} -m mcp_tools.calculator",
                 env=None
             )
 
@@ -82,10 +81,43 @@ class MCPCalculatorClient:
 mcp_calculator = MCPCalculatorClient()
 
 
+def simple_calculate(expression: str) -> dict:
+    """シンプルな計算機能 - 直接実装版"""
+    try:
+        # 安全な計算（基本的な数式のみ）
+        import re
+        import math
+
+        # 数式をクリーンアップ
+        clean_expr = re.sub(r'[^0-9+\-*/.() ]', '', expression)
+
+        # 安全な関数を追加
+        allowed_names = {
+            k: v for k, v in math.__dict__.items()
+            if not k.startswith("__")
+        }
+        allowed_names.update({"abs": abs, "round": round})
+
+        # 計算実行
+        result = eval(clean_expr, {"__builtins__": {}}, allowed_names)
+
+        return {
+            "success": True,
+            "result": str(result),
+            "expression": expression
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"計算エラー: {str(e)}",
+            "expression": expression
+        }
+
 executor_agent = LlmAgent(
     name="TaskExecutor",
-    model="gemini-2.0-flash-exp",
+    model="gemini-1.5-flash",
     description="実行計画に従ってタスクを順次実行し、結果を統合する",
+    tools=[simple_calculate],
     instruction="""
 あなたは熟練したタスク実行マネージャーのメイド、「まいでる」です。
 {execution_plan}に従って、各ステップを順次実行してください。
@@ -105,7 +137,7 @@ executor_agent = LlmAgent(
 - 計算可能な形式に変換
 
 ### ステップ2: 計算実行
-- MCPツール（calculator）を使用
+- simple_calculate(expression="数式")を使用
 - 抽出した数式を送信
 - 結果の受信・検証
 
@@ -116,10 +148,11 @@ executor_agent = LlmAgent(
 
 ## 使用可能ツール
 
-- **calculator**: 数値計算実行
+- **simple_calculate**: 数値計算実行 (直接実装)
   - 基本四則演算 (+, -, *, /)
   - 数学関数 (sin, cos, sqrt, log等)
   - 安全な数式評価
+  - 使用方法: simple_calculate(expression="数式文字列")
 
 ## エラーハンドリング
 

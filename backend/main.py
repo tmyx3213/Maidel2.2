@@ -7,12 +7,17 @@ Google ADK SequentialAgent によるマルチエージェントシステム
 import asyncio
 import json
 import sys
+import os
+from dotenv import load_dotenv
 from google.adk.agents import SequentialAgent
 from google.adk.sessions import Session, InMemorySessionService
 from google.adk import Runner
-from agents.conversation import conversation_agent
-from agents.planner import planner_agent
-from agents.executor import executor_agent
+from backend.agents.conversation import conversation_agent
+from backend.agents.planner import planner_agent
+from backend.agents.executor import executor_agent
+
+# .envファイル読み込み
+load_dotenv()
 
 
 class MaidelSystem:
@@ -43,44 +48,43 @@ class MaidelSystem:
     async def process_message(self, message: str) -> dict:
         """メッセージ処理"""
         try:
-            # 新しいセッション作成
-            session = Session(
-                id="maidel_session_001",
-                appName="Maidel2.2",
-                userId="user_001"
-            )
-
-            # ユーザー入力をセッションに設定
-            session.state["user_input"] = message
-
             print(f"[Maidel] 受信: {message}")
 
-            # SequentialAgent 実行
+            # セッション作成
+            user_id = "user_001"
+            session = await self.session_service.create_session(
+                app_name="Maidel2.2",
+                user_id=user_id,
+                state={}
+            )
+            session_id = session.id
+
+            # SequentialAgent 実行（google.genai.types.Content形式）
+            from google.genai import types
+            user_content = types.Content(
+                role="user",
+                parts=[types.Part(text=message)]
+            )
+
             result_generator = self.runner.run(
-                user_id="user_001",
-                session_id=session.id,
-                new_message=message
+                user_id=user_id,
+                session_id=session_id,
+                new_message=user_content
             )
 
             # 最終結果を取得
             final_event = None
+            session_state = {}
             for event in result_generator:
                 final_event = event
-
-            # セッション状態を取得
-            current_session = self.session_service.get_session(session.id)
+                # イベントからセッション状態を取得
+                if hasattr(event, 'session') and event.session:
+                    session_state = dict(event.session.state)
 
             # 結果の取得
-            if current_session:
-                task_type = current_session.state.get("task_type", "unknown")
-                execution_plan = current_session.state.get("execution_plan", [])
-                final_result = current_session.state.get("final_result", "処理に失敗しました")
-                session_state = dict(current_session.state)
-            else:
-                task_type = "unknown"
-                execution_plan = []
-                final_result = "セッション取得に失敗しました"
-                session_state = {}
+            task_type = session_state.get("task_type", "unknown")
+            execution_plan = session_state.get("execution_plan", [])
+            final_result = session_state.get("final_result", "処理に失敗しました")
 
             response = {
                 "success": True,
@@ -108,21 +112,21 @@ class MaidelSystem:
     async def run_interactive(self):
         """対話モード実行"""
         print("=" * 60)
-        print("🏠 Maidel 2.2 マルチエージェントシステム 起動")
+        print("Maidel 2.2 マルチエージェントシステム 起動")
         print("=" * 60)
-        print("💬 対話モードを開始します")
-        print("📝 'quit' または 'exit' で終了")
-        print("🧮 計算例: '2 + 3 を計算して'")
-        print("💭 雑談例: 'こんにちは'")
+        print("対話モードを開始します")
+        print("'quit' または 'exit' で終了")
+        print("計算例: '2 + 3 を計算して'")
+        print("雑談例: 'こんにちは'")
         print("-" * 60)
 
         while True:
             try:
                 # ユーザー入力
-                user_input = input("\n👤 あなた: ").strip()
+                user_input = input("\nあなた: ").strip()
 
                 if user_input.lower() in ['quit', 'exit', 'q']:
-                    print("🏠 Maidel 2.2 を終了します。お疲れ様でした！")
+                    print("Maidel 2.2 を終了します。お疲れ様でした！")
                     break
 
                 if not user_input:
@@ -133,28 +137,28 @@ class MaidelSystem:
 
                 # 結果表示
                 if response["success"]:
-                    print(f"🤖 まいでる: {response['result']}")
+                    print(f"まいでる: {response['result']}")
 
                     # デバッグ情報（詳細表示）
-                    if input("\n🔍 詳細情報を表示しますか？ (y/N): ").lower() == 'y':
-                        print("\n📊 処理詳細:")
+                    if input("\n詳細情報を表示しますか？ (y/N): ").lower() == 'y':
+                        print("\n処理詳細:")
                         print(f"   タスク種別: {response['task_type']}")
                         if response['execution_plan']:
                             print(f"   実行ステップ数: {len(response['execution_plan'])}")
                             for i, step in enumerate(response['execution_plan'], 1):
                                 print(f"     {i}. {step.get('name', 'Unknown')}")
                 else:
-                    print(f"❌ エラー: {response['error']}")
+                    print(f"エラー: {response['error']}")
 
             except KeyboardInterrupt:
-                print("\n\n🏠 Maidel 2.2 を終了します。")
+                print("\n\nMaidel 2.2 を終了します。")
                 break
             except Exception as e:
-                print(f"❌ システムエラー: {e}")
+                print(f"システムエラー: {e}")
 
     async def run_stdio(self):
         """stdio通信モード（Electron連携用）"""
-        print("🔗 Maidel 2.2 stdio通信モード開始", file=sys.stderr)
+        print("Maidel 2.2 stdio通信モード開始", file=sys.stderr)
 
         try:
             while True:

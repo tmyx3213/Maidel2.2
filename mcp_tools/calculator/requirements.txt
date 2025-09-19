@@ -1,0 +1,9 @@
+# Calculator MCP Tool Requirements
+# Python 3.9+ required
+
+# No external dependencies required for basic functionality
+# All calculations use Python standard library (math module)
+
+# Optional dependencies for enhanced functionality:
+# numpy>=1.21.0          # Advanced mathematical operations
+# sympy>=1.8             # Symbolic mathematics

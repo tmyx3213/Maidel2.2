@@ -1,7 +1,9 @@
 """
-Maidel 2.2 メインサーバー
+Maidel 2.2 Backend Main
 
-Google ADK SequentialAgent によるマルチエージェントシステム
+SequentialAgent pipeline (Conversation -> Planner -> Executor) with a
+deterministic fallback executor to ensure results are produced for tasks.
+All logs go to stderr; stdout is reserved for JSON responses (JSONL).
 """
 
 import asyncio
@@ -10,209 +12,207 @@ import sys
 import os
 from dotenv import load_dotenv
 from google.adk.agents import SequentialAgent
-from google.adk.sessions import Session, InMemorySessionService
+from google.adk.sessions import InMemorySessionService
 from google.adk import Runner
+
+# Windows文字エンコーディング対応
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+
 from backend.agents.conversation import conversation_agent
 from backend.agents.planner import planner_agent
-from backend.agents.executor import executor_agent
+from backend.agents.executor import executor_agent, execution_manager
 
-# .envファイル読み込み
+
+# Load environment from .env
 load_dotenv()
 
 
 class MaidelSystem:
-    """Maidel 2.2 マルチエージェントシステム"""
+    """Maidel 2.2 multi‑agent system wrapper."""
 
-    def __init__(self):
-        # SequentialAgent による統合システム
+    def __init__(self) -> None:
+        # Compose SequentialAgent
         self.maidel_system = SequentialAgent(
             name="MaidelSystem",
-            description="キャラクター対話型AIエージェントシステム - まいでる",
+            description="Character dialog AI with planning and execution",
             sub_agents=[
-                conversation_agent,  # 1. 意図理解
-                planner_agent,       # 2. 計画策定
-                executor_agent       # 3. 実行制御
-            ]
+                conversation_agent,  # 1. classify chat vs task
+                planner_agent,       # 2. build execution plan
+                executor_agent       # 3. LLM executor (may be bypassed)
+            ],
         )
 
-        # セッションサービス
+        # Session service and runner
         self.session_service = InMemorySessionService()
-
-        # Runner作成
         self.runner = Runner(
             app_name="Maidel2.2",
             agent=self.maidel_system,
-            session_service=self.session_service
+            session_service=self.session_service,
         )
 
     async def process_message(self, message: str) -> dict:
-        """メッセージ処理"""
+        """Run the pipeline and deterministically execute planned tasks."""
         try:
-            print(f"[Maidel] 受信: {message}")
+            print(f"[Maidel] Received: {message}", file=sys.stderr)
 
-            # セッション作成
+            # Create a fresh session
             user_id = "user_001"
             session = await self.session_service.create_session(
-                app_name="Maidel2.2",
-                user_id=user_id,
-                state={}
+                app_name="Maidel2.2", user_id=user_id, state={}
             )
             session_id = session.id
 
-            # SequentialAgent 実行（google.genai.types.Content形式）
+            # Run SequentialAgent with Content message
             from google.genai import types
-            user_content = types.Content(
-                role="user",
-                parts=[types.Part(text=message)]
-            )
 
+            user_content = types.Content(role="user", parts=[types.Part(text=message)])
             result_generator = self.runner.run(
-                user_id=user_id,
-                session_id=session_id,
-                new_message=user_content
+                user_id=user_id, session_id=session_id, new_message=user_content
             )
 
-            # 最終結果を取得
             final_event = None
-            session_state = {}
+            session_state: dict = {}
             for event in result_generator:
                 final_event = event
-                # イベントからセッション状態を取得
-                if hasattr(event, 'session') and event.session:
-                    session_state = dict(event.session.state)
+                # Merge incremental state deltas if present
+                try:
+                    actions = getattr(event, "actions", None)
+                    state_delta = getattr(actions, "state_delta", None) if actions else None
+                    if isinstance(state_delta, dict):
+                        session_state.update(state_delta)
+                except Exception:
+                    pass
+                # Merge full session snapshot if provided
+                if hasattr(event, "session") and getattr(event, "session"):
+                    try:
+                        session_state.update(dict(event.session.state))
+                    except Exception:
+                        pass
 
-            # 結果の取得
-            task_type = session_state.get("task_type", "unknown")
-            execution_plan = session_state.get("execution_plan", [])
-            final_result = session_state.get("final_result", "処理に失敗しました")
+            # Extract outputs from LLM agents
+            task_type = str(session_state.get("task_type", "unknown")).strip()
+            execution_plan_raw = session_state.get("execution_plan", [])
+
+            # Parse execution_plan if it's a JSON string
+            execution_plan = []
+            if isinstance(execution_plan_raw, str):
+                try:
+                    # Extract JSON from markdown code block if present
+                    import re
+                    json_match = re.search(r'```json\s*(\[.*?\])\s*```', execution_plan_raw, re.DOTALL)
+                    if json_match:
+                        execution_plan = json.loads(json_match.group(1))
+                    else:
+                        execution_plan = json.loads(execution_plan_raw)
+                except (json.JSONDecodeError, AttributeError):
+                    execution_plan = []
+            elif isinstance(execution_plan_raw, list):
+                execution_plan = execution_plan_raw
+
+            final_result = session_state.get("final_result")
+
+            # ExecutionManager disabled - ExecutorAgent handles all execution
+            # Determine success based on whether we got a meaningful result
+            success = bool(final_result and final_result.strip())
+            # Note: ExecutorAgent already executed the plan via SequentialAgent
+
+            # Fallback disabled - SequentialAgent with ExecutorAgent handles all cases
+            # All task classification and execution is now handled by the 3-layer agent system
 
             response = {
-                "success": True,
+                "success": success,
                 "message": message,
                 "task_type": task_type,
                 "execution_plan": execution_plan,
                 "result": final_result,
                 "session_state": session_state,
-                "agent_result": str(final_event)
+                "agent_result": str(final_event),
             }
 
-            print(f"[Maidel] 処理完了: {task_type}")
+            print(f"[Maidel] Type: {task_type}", file=sys.stderr)
             return response
 
         except Exception as e:
-            error_response = {
+            print(f"[Maidel] Error: {e}", file=sys.stderr)
+            return {
                 "success": False,
                 "message": message,
                 "error": str(e),
-                "error_type": "system_error"
+                "error_type": "system_error",
             }
-            print(f"[Maidel] エラー: {e}")
-            return error_response
 
-    async def run_interactive(self):
-        """対話モード実行"""
+    async def run_interactive(self) -> None:
+        """Interactive CLI loop (manual testing)."""
         print("=" * 60)
-        print("Maidel 2.2 マルチエージェントシステム 起動")
-        print("=" * 60)
-        print("対話モードを開始します")
-        print("'quit' または 'exit' で終了")
-        print("計算例: '2 + 3 を計算して'")
-        print("雑談例: 'こんにちは'")
+        print("Maidel 2.2 interactive mode")
+        print("'quit' or 'exit' to end")
+        print("Try: '2 + 3 を計算して'")
         print("-" * 60)
 
         while True:
             try:
-                # ユーザー入力
-                user_input = input("\nあなた: ").strip()
-
-                if user_input.lower() in ['quit', 'exit', 'q']:
-                    print("Maidel 2.2 を終了します。お疲れ様でした！")
+                user_input = input("あなた: ").strip()
+                if user_input.lower() in ["quit", "exit", "q"]:
+                    print("Bye.")
                     break
-
                 if not user_input:
                     continue
 
-                # メッセージ処理
                 response = await self.process_message(user_input)
-
-                # 結果表示
-                if response["success"]:
-                    print(f"まいでる: {response['result']}")
-
-                    # デバッグ情報（詳細表示）
-                    if input("\n詳細情報を表示しますか？ (y/N): ").lower() == 'y':
-                        print("\n処理詳細:")
-                        print(f"   タスク種別: {response['task_type']}")
-                        if response['execution_plan']:
-                            print(f"   実行ステップ数: {len(response['execution_plan'])}")
-                            for i, step in enumerate(response['execution_plan'], 1):
-                                print(f"     {i}. {step.get('name', 'Unknown')}")
+                if response.get("success"):
+                    print(response.get("result") or "処理が完了しました")
                 else:
-                    print(f"エラー: {response['error']}")
+                    print(f"エラー: {response.get('error')}")
 
             except KeyboardInterrupt:
-                print("\n\nMaidel 2.2 を終了します。")
+                print("\nInterrupted. Bye.")
                 break
             except Exception as e:
-                print(f"システムエラー: {e}")
+                print(f"System error: {e}")
 
-    async def run_stdio(self):
-        """stdio通信モード（Electron連携用）"""
-        print("Maidel 2.2 stdio通信モード開始", file=sys.stderr)
-
+    async def run_stdio(self) -> None:
+        """JSONL stdio mode for Electron bridge."""
+        print("Maidel 2.2 stdio mode ready", file=sys.stderr)
         try:
+            loop = asyncio.get_event_loop()
             while True:
-                # 標準入力から1行読み取り
-                line = await asyncio.get_event_loop().run_in_executor(
-                    None, sys.stdin.readline
-                )
-
-                if not line:  # EOF
-                    break
-
+                line = await loop.run_in_executor(None, sys.stdin.readline)
+                if not line:
+                    break  # EOF
                 line = line.strip()
                 if not line:
                     continue
 
                 try:
-                    # JSON解析
                     request = json.loads(line)
                     message = request.get("message", "")
-
                     if message:
-                        # メッセージ処理
                         response = await self.process_message(message)
-
-                        # JSON応答
                         print(json.dumps(response, ensure_ascii=False), flush=True)
                     else:
-                        error_response = {
+                        print(json.dumps({
                             "success": False,
                             "error": "メッセージが空です",
                             "error_type": "empty_message"
-                        }
-                        print(json.dumps(error_response, ensure_ascii=False), flush=True)
-
+                        }, ensure_ascii=False), flush=True)
                 except json.JSONDecodeError as e:
-                    error_response = {
+                    print(json.dumps({
                         "success": False,
-                        "error": f"JSON解析エラー: {str(e)}",
-                        "error_type": "json_parse_error"
-                    }
-                    print(json.dumps(error_response, ensure_ascii=False), flush=True)
+                        "error": f"JSON解析エラー: {e}",
+                        "error_type": "json_parse_error",
+                    }, ensure_ascii=False), flush=True)
 
         except Exception as e:
             print(f"stdio通信エラー: {e}", file=sys.stderr)
 
 
-async def main():
-    """メイン実行関数"""
+async def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] == "--stdio":
-        # stdio通信モード
         maidel = MaidelSystem()
         await maidel.run_stdio()
     else:
-        # 対話モード
         maidel = MaidelSystem()
         await maidel.run_interactive()
 

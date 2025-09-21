@@ -1,249 +1,191 @@
 """
-Calculator MCP Server
-
-Model Context Protocol準拠の計算サーバー
-stdio通信でADKエージェントと連携
+Calculator MCP Server (JSON-RPC over stdio with Content-Length framing)
 """
 
 import sys
 import json
 import asyncio
-from typing import Dict, Any, List
+from typing import Dict, Any
 from .calculator import SafeCalculator
 
 
-class CalculatorMCPServer:
-    """Calculator MCP Server Implementation"""
+def _read_message() -> Dict[str, Any]:
+    content_length = None
+    saw_any_header = False
+    # Read headers (or detect JSON line fallback)
+    while True:
+        line = sys.stdin.buffer.readline()
+        if not line:
+            return {}
+        # Detect JSON line mode (no headers)
+        stripped = line.strip()
+        if stripped.startswith(b"{") or stripped.startswith(b"["):
+            try:
+                return json.loads(stripped.decode("utf-8"))
+            except Exception:
+                return {}
+        # Header mode
+        saw_any_header = True
+        if line in (b"\r\n", b"\n"):
+            break
+        try:
+            header = line.decode("utf-8").strip()
+        except Exception:
+            header = ""
+        if header.lower().startswith("content-length:"):
+            try:
+                content_length = int(header.split(":", 1)[1].strip())
+            except Exception:
+                content_length = None
+    if content_length is None:
+        return {}
+    body = sys.stdin.buffer.read(content_length)
+    try:
+        return json.loads(body.decode("utf-8"))
+    except Exception:
+        return {}
 
-    def __init__(self):
+
+def _write_message(payload: Dict[str, Any]) -> None:
+    data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    # Some MCP clients require only Content-Length header
+    headers = f"Content-Length: {len(data)}\r\n\r\n".encode("ascii")
+    sys.stdout.buffer.write(headers)
+    sys.stdout.buffer.write(data)
+    sys.stdout.buffer.flush()
+
+
+class CalculatorMCPServer:
+    def __init__(self) -> None:
         self.calculator = SafeCalculator()
         self.server_info = {
             "name": "calculator",
             "version": "1.0.0",
-            "description": "数学計算を安全に実行するMCPサーバー",
-            "author": "Maidel 2.2 Project"
+            "description": "安全な数学計算を提供する MCP サーバー",
+            "author": "Maidel 2.2 Project",
         }
 
-    def get_server_info(self) -> Dict[str, Any]:
-        """サーバー情報を取得"""
-        return self.server_info
-
     def list_tools(self) -> Dict[str, Any]:
-        """利用可能なツール一覧を返す"""
         return {
             "tools": [
                 {
                     "name": "calculate",
-                    "description": "数学的な計算式を評価し、結果を返す",
+                    "description": "数式を評価して結果を返します",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
                             "expression": {
                                 "type": "string",
-                                "description": "計算する数式 (例: '2 + 3 * 4', 'sqrt(16)', 'sin(pi/2)')"
+                                "description": "計算する数式 (例: '2 + 3 * 4')",
                             }
                         },
-                        "required": ["expression"]
-                    }
-                },
-                {
-                    "name": "validate_expression",
-                    "description": "数式の妥当性を事前チェック",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "expression": {
-                                "type": "string",
-                                "description": "検証する数式"
-                            }
-                        },
-                        "required": ["expression"]
-                    }
+                        "required": ["expression"],
+                    },
                 },
                 {
                     "name": "get_supported_functions",
-                    "description": "サポートされている数学関数の一覧を取得",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {}
-                    }
-                }
+                    "description": "サポート関数一覧を返します",
+                    "inputSchema": {"type": "object", "properties": {}},
+                },
             ]
         }
 
     def call_tool(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        """ツール実行"""
         try:
             if name == "calculate":
                 expression = arguments.get("expression", "")
                 result = self.calculator.calculate(expression)
                 return {
-                    "content": [{
-                        "type": "text",
-                        "text": json.dumps(result, ensure_ascii=False, indent=2)
-                    }],
-                    "isError": not result.get("success", False)
+                    "content": [
+                        {"type": "text", "text": json.dumps(result, ensure_ascii=False)}
+                    ],
+                    "isError": not result.get("success", False),
                 }
-
-            elif name == "validate_expression":
-                expression = arguments.get("expression", "")
-                result = self.calculator.validate_expression(expression)
-                return {
-                    "content": [{
-                        "type": "text",
-                        "text": json.dumps(result, ensure_ascii=False, indent=2)
-                    }],
-                    "isError": not result.get("valid", False)
-                }
-
             elif name == "get_supported_functions":
                 functions = list(self.calculator.functions.keys())
                 result = {
                     "success": True,
                     "supported_functions": functions,
-                    "total_count": len(functions)
+                    "total_count": len(functions),
                 }
                 return {
-                    "content": [{
-                        "type": "text",
-                        "text": json.dumps(result, ensure_ascii=False, indent=2)
-                    }],
-                    "isError": False
+                    "content": [
+                        {"type": "text", "text": json.dumps(result, ensure_ascii=False)}
+                    ],
+                    "isError": False,
                 }
-
             else:
-                error_result = {
+                err = {
                     "success": False,
-                    "error": f"未知のツール: {name}",
-                    "error_type": "unknown_tool"
+                    "error": f"unknown tool: {name}",
+                    "error_type": "unknown_tool",
                 }
-                return {
-                    "content": [{
-                        "type": "text",
-                        "text": json.dumps(error_result, ensure_ascii=False, indent=2)
-                    }],
-                    "isError": True
-                }
-
+                return {"content": [{"type": "text", "text": json.dumps(err)}], "isError": True}
         except Exception as e:
-            error_result = {
-                "success": False,
-                "error": f"ツール実行エラー: {str(e)}",
-                "error_type": "tool_execution_error"
-            }
-            return {
-                "content": [{
-                    "type": "text",
-                    "text": json.dumps(error_result, ensure_ascii=False, indent=2)
-                }],
-                "isError": True
-            }
+            err = {"success": False, "error": f"tool_execution_error: {e}"}
+            return {"content": [{"type": "text", "text": json.dumps(err)}], "isError": True}
 
     async def handle_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
-        """リクエスト処理"""
         try:
             method = request.get("method")
             params = request.get("params", {})
-            request_id = request.get("id")
+            req_id = request.get("id")
+            # minimal debug
+            print(f"[MCP] recv method={method}", file=sys.stderr)
 
             if method == "initialize":
-                response = {
+                result = {
                     "protocolVersion": "2024-11-05",
                     "capabilities": {
-                        "tools": {}
+                        "tools": {"listChanged": True},
+                        "resources": {},
+                        "prompts": {},
                     },
-                    "serverInfo": self.server_info
+                    "serverInfo": self.server_info,
                 }
             elif method == "tools/list":
-                response = self.list_tools()
+                result = self.list_tools()
             elif method == "tools/call":
-                tool_name = params.get("name")
-                arguments = params.get("arguments", {})
-                response = self.call_tool(tool_name, arguments)
+                result = self.call_tool(params.get("name"), params.get("arguments", {}))
             else:
-                response = {
-                    "error": {
-                        "code": -32601,
-                        "message": f"Method not found: {method}"
-                    }
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {"code": -32601, "message": f"Method not found: {method}"},
                 }
 
-            # レスポンスにIDを追加
-            if request_id is not None:
-                response["id"] = request_id
-
-            return response
-
+            resp = {"jsonrpc": "2.0", "id": req_id, "result": result}
+            print(f"[MCP] send ok for {method}", file=sys.stderr)
+            return resp
         except Exception as e:
-            error_response = {
-                "error": {
-                    "code": -32603,
-                    "message": f"Internal error: {str(e)}"
-                }
+            err = {
+                "jsonrpc": "2.0",
+                "id": request.get("id"),
+                "error": {"code": -32603, "message": f"Internal error: {e}"},
             }
-            if request.get("id") is not None:
-                error_response["id"] = request["id"]
-            return error_response
+            print(f"[MCP] send error for {request.get('method')}: {e}", file=sys.stderr)
+            return err
 
-    async def run_stdio_server(self):
-        """stdio通信でのサーバー実行"""
-        print(f"Calculator MCP Server starting...", file=sys.stderr)
+    async def run_stdio_server(self) -> None:
+        print("Calculator MCP Server starting...", file=sys.stderr)
         print(f"Server info: {self.server_info}", file=sys.stderr)
-
+        loop = asyncio.get_event_loop()
         try:
             while True:
-                try:
-                    # 標準入力から1行読み取り
-                    line = await asyncio.get_event_loop().run_in_executor(
-                        None, sys.stdin.readline
-                    )
-
-                    if not line:  # EOF
-                        break
-
-                    line = line.strip()
-                    if not line:
-                        continue
-
-                    # JSON解析
-                    try:
-                        request = json.loads(line)
-                    except json.JSONDecodeError as e:
-                        error_response = {
-                            "error": {
-                                "code": -32700,
-                                "message": f"Parse error: {str(e)}"
-                            }
-                        }
-                        print(json.dumps(error_response, ensure_ascii=False), flush=True)
-                        continue
-
-                    # リクエスト処理
-                    response = await self.handle_request(request)
-
-                    # レスポンス送信
-                    print(json.dumps(response, ensure_ascii=False), flush=True)
-
-                except KeyboardInterrupt:
-                    print("Server shutting down...", file=sys.stderr)
+                req = await loop.run_in_executor(None, _read_message)
+                if not req:
                     break
-                except Exception as e:
-                    print(f"Error processing request: {e}", file=sys.stderr)
-                    error_response = {
-                        "error": {
-                            "code": -32603,
-                            "message": f"Internal error: {str(e)}"
-                        }
-                    }
-                    print(json.dumps(error_response, ensure_ascii=False), flush=True)
-
+                print("[MCP] request received", file=sys.stderr)
+                resp = await self.handle_request(req)
+                await loop.run_in_executor(None, _write_message, resp)
+        except KeyboardInterrupt:
+            print("Server shutting down...", file=sys.stderr)
         except Exception as e:
             print(f"Fatal server error: {e}", file=sys.stderr)
             sys.exit(1)
 
 
 async def main():
-    """メイン実行関数"""
     server = CalculatorMCPServer()
     await server.run_stdio_server()
 

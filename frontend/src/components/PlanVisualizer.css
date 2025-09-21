@@ -1,0 +1,459 @@
+/* Plan Visualizer Styles */
+
+.plan-visualizer {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* ヘッダー */
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+}
+
+.plan-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.title-icon {
+  font-size: 20px;
+}
+
+.plan-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.completed {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  color: white;
+}
+
+.status-badge.running {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+  animation: pulse 2s infinite;
+}
+
+.status-badge.error {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+}
+
+.status-badge.pending {
+  background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+  color: white;
+}
+
+/* 進捗バー */
+.progress-container {
+  margin-bottom: 20px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3498db, #2ecc71);
+  border-radius: 4px;
+  transition: width 0.6s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    transparent 33%,
+    rgba(255, 255, 255, 0.3) 33%,
+    rgba(255, 255, 255, 0.3) 66%,
+    transparent 66%
+  );
+  background-size: 20px 20px;
+  animation: progress-stripes 1s linear infinite;
+}
+
+@keyframes progress-stripes {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 0; }
+}
+
+.progress-text {
+  font-size: 12px;
+  color: #7f8c8d;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* ステップフロー */
+.steps-flow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px 0;
+  margin-bottom: 20px;
+}
+
+/* ステップカード */
+.step-card {
+  min-width: 220px;
+  max-width: 280px;
+  background: white;
+  border: 2px solid var(--status-color, #bdc3c7);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.step-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.step-card.current {
+  border-width: 3px;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.step-card.completed {
+  background: linear-gradient(135deg, rgba(39, 174, 96, 0.05), rgba(46, 204, 113, 0.05));
+}
+
+.step-card.running {
+  background: linear-gradient(135deg, rgba(243, 156, 18, 0.05), rgba(230, 126, 34, 0.05));
+  animation: cardPulse 2s infinite;
+}
+
+.step-card.error {
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.05), rgba(192, 57, 43, 0.05));
+}
+
+@keyframes cardPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+/* ステップヘッダー */
+.step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.step-number {
+  width: 28px;
+  height: 28px;
+  background: var(--status-color, #bdc3c7);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.step-icons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.status-icon,
+.tool-icon {
+  font-size: 16px;
+}
+
+.tool-icon {
+  opacity: 0.7;
+}
+
+/* ステップコンテンツ */
+.step-content {
+  margin-bottom: 12px;
+}
+
+.step-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 6px 0;
+  line-height: 1.3;
+}
+
+.step-description {
+  font-size: 12px;
+  color: #7f8c8d;
+  line-height: 1.4;
+  margin: 0 0 8px 0;
+}
+
+.step-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #95a5a6;
+  margin-bottom: 8px;
+}
+
+.time-icon {
+  font-size: 12px;
+}
+
+/* 結果表示 */
+.step-result {
+  background: rgba(39, 174, 96, 0.1);
+  border: 1px solid rgba(39, 174, 96, 0.2);
+  border-radius: 6px;
+  padding: 8px;
+  margin-top: 8px;
+}
+
+.result-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #27ae60;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.result-value {
+  font-size: 12px;
+  color: #2c3e50;
+  font-family: 'Courier New', monospace;
+  word-break: break-all;
+}
+
+/* エラー表示 */
+.step-error {
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.2);
+  border-radius: 6px;
+  padding: 8px;
+  margin-top: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.error-icon {
+  font-size: 14px;
+  margin-top: 1px;
+}
+
+.error-text {
+  font-size: 11px;
+  color: #e74c3c;
+  line-height: 1.3;
+}
+
+/* 依存関係 */
+.step-dependencies {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.dependencies-label {
+  font-size: 10px;
+  color: #95a5a6;
+  font-weight: 600;
+}
+
+.dependency-badge {
+  background: #ecf0f1;
+  color: #7f8c8d;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+/* コネクター */
+.step-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  margin-top: 40px;
+  flex-shrink: 0;
+}
+
+.connector-line {
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(180deg, #bdc3c7, #95a5a6);
+  margin-bottom: 4px;
+}
+
+.connector-arrow {
+  color: #95a5a6;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* サマリー */
+.plan-summary {
+  border-top: 2px solid rgba(0, 0, 0, 0.05);
+  padding-top: 16px;
+}
+
+.summary-stats {
+  display: flex;
+  justify-content: space-around;
+  gap: 16px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.stat-icon {
+  font-size: 18px;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .plan-visualizer {
+    padding: 16px;
+  }
+
+  .plan-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .steps-flow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .step-card {
+    min-width: auto;
+    max-width: none;
+  }
+
+  .step-connector {
+    flex-direction: row;
+    margin: 8px 0;
+    padding: 8px 0;
+  }
+
+  .connector-line {
+    width: 20px;
+    height: 2px;
+    margin: 0 4px 0 0;
+  }
+
+  .connector-arrow {
+    transform: rotate(90deg);
+  }
+
+  .summary-stats {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .stat-item {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+  }
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .plan-visualizer {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .plan-title {
+    color: #ecf0f1;
+  }
+
+  .step-card {
+    background: #2c3e50;
+    color: #ecf0f1;
+  }
+
+  .step-name {
+    color: #ecf0f1;
+  }
+
+  .stat-value {
+    color: #ecf0f1;
+  }
+
+  .progress-bar {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}

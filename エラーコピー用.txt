@@ -1,0 +1,95 @@
+[1] ADK Response: {
+[1]   success: false,
+[1]   message: '百と五十を足してみて',
+[1]   task_type: 'task',
+[1]   execution_plan: [
+[1]     {
+[1]       step_id: 1,
+[1]       name: '入力解析',
+[1]       description: 'ユーザーの計算要求を詳細に分析し、必要なパラメータを抽出',
+[1]       tool: null,
+[1]       estimated_time: '1-2秒',
+[1]       dependencies: [],
+[1]       expected_output: '数式の抽出と前処理'
+[1]     },
+[1]     {
+[1]       step_id: 2,
+[1]       name: '計算実行',
+[1]       description: '抽出した数式を使用して数値計算を実行',
+[1]       tool: 'calculator',
+[1]       estimated_time: '1秒未満',
+[1]       dependencies: [Array],
+[1]       expected_output: '計算結果'
+[1]     },
+[1]     {
+[1]       step_id: 3,
+[1]       name: '結果整形',
+[1]       description: '計算結果をユーザーにわかりやすい形式で整形して表示',
+[1]       tool: null,
+[1]       estimated_time: '1秒未満',
+[1]       dependencies: [Array],
+[1]       expected_output: '整形済み結果メッセージ'
+[1]     }
+[1]   ],
+[1]   result: "申し訳ございません、計算エラー: name '百と五十を足してみて' is not defined\n\nもう一度お試しください",
+[1]   session_state: {
+[1]     task_type: 'task\n',
+[1]     execution_plan: '```json\n' +
+[1]       '[\n' +
+[1]       '    {\n' +
+[1]       '        "step_id": 1,\n' +
+[1]       '        "name": "入力解析",\n' +
+[1]       '        "description": "ユーザーの計算要求を詳細に分析し、必要なパラメータを抽出",\n' +
+[1]       '        "tool": null,\n' +
+[1]       '        "estimated_time": "1-2秒",\n' +
+[1]       '        "dependencies": [],\n' +
+[1]       '        "expected_output": "数式の抽出と前処理"\n' +
+[1]       '    },\n' +
+[1]       '    {\n' +
+[1]       '        "step_id": 2,\n' +
+[1]       '        "name": "計算実行",\n' +
+[1]       '        "description": "抽出した数式を使用して数値計算を実行",\n' +
+[1]       '        "tool": "calculator",\n' +
+[1]       '        "estimated_time": "1秒未満",\n' +
+[1]       '        "dependencies": [1],\n' +
+[1]       '        "expected_output": "計算結果"\n' +
+[1]       '    },\n' +
+[1]       '    {\n' +
+[1]       '        "step_id": 3,\n' +
+[1]       '        "name": "結果整形",\n' +
+[1]       '        "description": "計算結果をユーザーにわかりやすい形式で整形して表示",\n' +
+[1]       '        "tool": null,\n' +
+[1]       '        "estimated_time": "1秒未満",\n' +
+[1]       '        "dependencies": [2],\n' +
+[1]       '        "expected_output": "整形済み結果メッセージ"\n' +
+[1]       '    }\n' +
+[1]       ']\n' +
+[1]       '```',
+[1]     final_result: "申し訳ございません、計算エラー: name '百と五十を足してみて' is not defined\n\nもう一度お試しください"
+[1]   },
+[1]   agent_result: 'content=Content(\n' +
+[1]     '  parts=[\n' +
+[1]     '    Part(\n' +
+[1]     '      text="""100+50 = 150\n' +
+[1]     '"""\n' +
+[1]     '    ),\n' +
+[1]     '  ],\n' +
+[1]     "  role='model'\n" +
+[1]     ") grounding_metadata=None partial=None turn_complete=None finish_reason=<FinishReason.STOP: 'STOP'> error_code=None error_message=None interrupted=None custom_metadata=None usage_metadata=GenerateContentResponseUsageMetadata(\n" +
+[1]     '  candidates_token_count=12,\n' +
+[1]     '  candidates_tokens_details=[\n' +
+[1]     '    ModalityTokenCount(\n' +
+[1]     "      modality=<MediaModality.TEXT: 'TEXT'>,\n" +
+[1]     '      token_count=12\n' +
+[1]     '    ),\n' +
+[1]     '  ],\n' +
+[1]     '  prompt_token_count=443,\n' +
+[1]     '  prompt_tokens_details=[\n' +
+[1]     '    ModalityTokenCount(\n' +
+[1]     "      modality=<MediaModality.TEXT: 'TEXT'>,\n" +
+[1]     '      token_count=443\n' +
+[1]     '    ),\n' +
+[1]     '  ],\n' +
+[1]     '  total_token_count=455\n' +
+[1]     ") live_session_resumption_update=None input_transcription=None output_transcription=None invocation_id='e-d3c10290-64d8-4f05-9a64-cab63c414ecb' author='TaskExecutor' actions=EventActions(skip_summarization=None, state_delta={'final_result': '100+50 = 150\\n'}, artifact_delta={}, transfer_to_agent=None, escalate=None, requested_auth_configs={}, requested_tool_confirmations={}) long_running_tool_ids=None branch=None id='2af09ec8-2784-4ee0-87f8-57add52b1f6c' timestamp=1758456118.717161"
+[1] }

@@ -1,0 +1,214 @@
+/* Status Bar Styles */
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+  font-size: 12px;
+  color: #2c3e50;
+  min-height: 32px;
+  position: relative;
+  z-index: 10;
+}
+
+/* セクション */
+.status-section,
+.info-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ステータスアイテム */
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+/* ADK接続状態 */
+.adk-status {
+  position: relative;
+}
+
+.status-indicator {
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.status-indicator.connected {
+  animation: none;
+}
+
+.status-indicator.connecting {
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.disconnected,
+.status-indicator.error {
+  animation: none;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.status-text {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.adk-status.connected .status-text {
+  color: #27ae60;
+}
+
+.adk-status.connecting .status-text {
+  color: #f39c12;
+}
+
+.adk-status.disconnected .status-text {
+  color: #e74c3c;
+}
+
+.adk-status.error .status-text {
+  color: #e67e22;
+}
+
+/* 最終更新時刻 */
+.last-update {
+  opacity: 0.7;
+}
+
+.update-icon {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.update-text {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: #7f8c8d;
+}
+
+/* バージョン情報 */
+.version {
+  opacity: 0.8;
+}
+
+.version-icon {
+  font-size: 10px;
+}
+
+.version-text {
+  font-size: 10px;
+  font-weight: 600;
+  color: #95a5a6;
+  font-variant-numeric: tabular-nums;
+}
+
+/* アプリ名 */
+.app-name {
+  opacity: 0.9;
+}
+
+.app-icon {
+  font-size: 12px;
+}
+
+.app-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: #34495e;
+  letter-spacing: 0.5px;
+}
+
+/* ホバーエフェクト */
+.status-item:hover {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.adk-status:hover .status-text {
+  text-shadow: 0 0 2px currentColor;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .status-bar {
+    padding: 6px 16px;
+    font-size: 11px;
+  }
+
+  .status-section,
+  .info-section {
+    gap: 12px;
+  }
+
+  .last-update {
+    display: none;
+  }
+
+  .status-text,
+  .app-text {
+    display: none;
+  }
+
+  .status-item {
+    gap: 2px;
+  }
+
+  .version-text {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 480px) {
+  .version {
+    display: none;
+  }
+
+  .status-section,
+  .info-section {
+    gap: 8px;
+  }
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .status-bar {
+    background: rgba(0, 0, 0, 0.9);
+    border-top-color: rgba(255, 255, 255, 0.1);
+    color: #ecf0f1;
+  }
+
+  .app-text {
+    color: #bdc3c7;
+  }
+
+  .version-text {
+    color: #7f8c8d;
+  }
+
+  .update-text {
+    color: #95a5a6;
+  }
+}

@@ -1,0 +1,288 @@
+/* Chat Interface Styles */
+
+.chat-interface {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+/* メッセージリスト */
+.chat-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* メッセージ */
+.message {
+  max-width: 80%;
+  word-wrap: break-word;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.message.user {
+  align-self: flex-end;
+}
+
+.message.maidel,
+.message.system {
+  align-self: flex-start;
+}
+
+.message.error {
+  border-left: 4px solid #e74c3c;
+}
+
+/* メッセージヘッダー */
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.message-sender {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.sender-icon {
+  font-size: 16px;
+}
+
+.sender-name {
+  color: #2c3e50;
+}
+
+.message.user .sender-name {
+  color: #2980b9;
+}
+
+.message.system .sender-name {
+  color: #e67e22;
+}
+
+.message-timestamp {
+  color: #7f8c8d;
+  font-size: 11px;
+}
+
+/* メッセージコンテンツ */
+.message-content {
+  background: #ffffff;
+  padding: 12px 16px;
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  line-height: 1.4;
+  font-size: 14px;
+  color: #2c3e50;
+  position: relative;
+}
+
+.message.user .message-content {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+}
+
+.message.system .message-content {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+}
+
+.message.error .message-content {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+}
+
+/* メッセージメタデータ */
+.message-metadata {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+}
+
+.task-type {
+  background: rgba(52, 152, 219, 0.1);
+  color: #2980b9;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* タイピングインジケーター */
+.message.processing .message-content {
+  background: #ecf0f1;
+  border: 2px solid #bdc3c7;
+  animation: pulse 2s infinite;
+}
+
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 8px 0;
+}
+
+.typing-indicator span {
+  width: 8px;
+  height: 8px;
+  background: #7f8c8d;
+  border-radius: 50%;
+  animation: typing 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0s; }
+
+@keyframes typing {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 入力エリア */
+.chat-input-container {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 16px 20px;
+}
+
+.chat-input-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.input-wrapper .maidel-input {
+  flex: 1;
+  min-height: 44px;
+  font-size: 14px;
+  resize: none;
+}
+
+.send-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  min-width: 44px;
+  padding: 0;
+}
+
+.send-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.send-button:disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+/* 入力ヘルプ */
+.input-help {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #7f8c8d;
+}
+
+.char-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.input-hint {
+  font-style: italic;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .chat-messages {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .message {
+    max-width: 90%;
+  }
+
+  .message-content {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .chat-input-container {
+    padding: 12px 16px;
+  }
+
+  .input-help {
+    font-size: 10px;
+  }
+
+  .input-hint {
+    display: none;
+  }
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .chat-interface {
+    background: rgba(0, 0, 0, 0.8);
+  }
+
+  .message-content {
+    background: #2c3e50;
+    color: #ecf0f1;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .message.processing .message-content {
+    background: #34495e;
+    border-color: #4a5f7a;
+  }
+
+  .chat-input-container {
+    background: rgba(0, 0, 0, 0.9);
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .sender-name {
+    color: #ecf0f1 !important;
+  }
+
+  .message.user .sender-name {
+    color: #3498db !important;
+  }
+
+  .message.system .sender-name {
+    color: #f39c12 !important;
+  }
+}
